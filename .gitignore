@@ -1,0 +1,17 @@
+#executables
+__pycache__
+__pycache__/
+#environments
+idlelib.idle/
+pdfe_env/
+venv_etc/
+.vscode/
+main.py
+#build
+build/
+dist/
+#files
+*.log
+*.spec
+#saved 
+saved_models/ 
