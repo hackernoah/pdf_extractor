@@ -1,6 +1,6 @@
 from tabula import read_pdf
 from table_classificator import TableClassificator
-from text_converter import TextExtractor
+from text_extractor import TextExtractor
 import openpyxl
 
 def read_concepts (path = 'concetti.xlsx',sheet_name = 'concepts'):
@@ -21,7 +21,16 @@ for i in range(235):
 				t.append((i,table,cols))
 	except Exception:
 		pass
+
 concepts = read_concepts()
 c = TableClassificator()
 c.train(concepts)
 r = c.find_results(t)
+
+# from tkinter import Tk
+# from pdfviewer import PDFViewer
+
+
+# root = Tk()
+# PDFViewer()
+# root.mainloop()

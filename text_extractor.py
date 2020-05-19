@@ -14,7 +14,7 @@ class TextExtractor:
 
 	date_separators = ['/','-','.']
 
-	def __init__(self, file = "BILANCIO SANT'ANGELO 2018.pdf"):
+	def __init__(self, file):
 		self.stream = open(file, 'rb')
 		self.parser = PDFParser(self.stream)
 		self.document = PDFDocument(self.parser)
@@ -54,7 +54,3 @@ class TextExtractor:
 			return True
 		except ValueError:
 			return False
-
-
-t = TextExtractor()
-
