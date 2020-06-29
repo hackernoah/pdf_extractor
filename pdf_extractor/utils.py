@@ -41,8 +41,9 @@ def is_percentage(txt):
 
 def to_percentage(txt):
     negative = True if has_parenthesis(txt) else False
-    new = delete_parenthesis(txt).replace('%')
-    return '-' + new if negative else new
+    clean = delete_parenthesis(txt).replace('%','')
+    output = to_float(clean) / 100
+    return 0 - output if negative else output
 
 def has_parenthesis(txt):
     if txt[0] == '(' and txt[-1] == ')':

@@ -28,7 +28,7 @@ class TableExtractor:
     def _find_max_similarity(self, concept, tables):
         threshold = 0.0
         self.results[concept] = []
-        for page,table,cols in tables:
+        for page,table in tables:
             n_rows = table.shape[0]
             for i in range(n_rows):
                 row = table.iloc[i,:]
@@ -36,7 +36,7 @@ class TableExtractor:
                 row_vector = self._create_vector(self.concepts[concept]['vocab'], row_string)
                 similiarity = self._cosine_similarity(self.concepts[concept]['vector'], row_vector)
                 if similiarity > threshold:
-                    finding = (similiarity,f'Page {page}:',i,[el for el in row if not pd.isna(el)],cols)
+                    finding = (similiarity,page,i,[el for el in row if not pd.isna(el)])
                     self.results[concept].append(finding)
         self.results[concept].sort(key = lambda x : x[0], reverse = True)
 

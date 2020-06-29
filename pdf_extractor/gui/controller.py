@@ -1,15 +1,18 @@
 from pdf_extractor.excel_adapter import read_concepts,export_values
 from pdf_extractor.engine.extractor_engine import ExtractionEngine
+import logging
 import json 
 
 class Controller:
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
         self.concepts = read_concepts()
-        self.engine = ExtractionEngine(concepts = self.concepts)
+        self.engine = ExtractionEngine(concepts = self.concepts, logger = self.logger)
         self.results = None
     
     def get_concepts_keys(self):
         keys = [k for k in self.concepts.keys()]
+        self.logger.info(f"retrieved {len(keys)} concepts from concepts file")
         return keys
 
     def get_concepts_labels(self):
@@ -22,7 +25,7 @@ class Controller:
             line_len = 0
             for word in columns:
                 if line_len < max_len:
-                    columns_label += word
+                    columns_label += word + ' '
                     line_len += len(word)
                 else:
                     columns_label += '\n'
