@@ -5,10 +5,13 @@ from pdf_extractor.utils import is_float,is_int,is_percentage,to_float,to_int, h
 
 class Concept:
 
-    def __init__(self, root, row = 0, column = 0, label = 'N/A' ):
+    def __init__(self, root, row = 0, label = 'N/A', canvas = None, canvas_command = None, logger = None ):
+        self.logger = logger
         self.root = root
         self.label = label
         self.row = row
+        self.canvas = canvas
+        self.canvas_command = canvas_command
         # self.position = {
         #     'row': row, 
         #     'column': column
@@ -24,6 +27,9 @@ class Concept:
         self.options_lst.configure(yscrollcommand= self.options_lst_scrollbar.set)
         self.options_lst.bind('<Double-Button>', self._selection)
         self.options_lst.bind("<MouseWheel>", self._on_mousewheel)
+        if self.canvas and canvas_command:
+            self.options_lst.bind('<Enter>', self._unbound_to_mousewheel)
+            self.options_lst.bind('<Leave>', self._bound_to_mousewheel)
         self.multiply_button = ttk.Button(self.root,text = 'x1000',command= self._multiply )
         self.multiply_button.grid(row = self.row, column = 4)
         self.multiply_button.configure(width=5)
@@ -42,6 +48,12 @@ class Concept:
     
     def _on_mousewheel(self, event):
         self.options_lst.yview_scroll(int(-1*(event.delta/12000)), "units")
+    
+    def _bound_to_mousewheel(self, event):
+        self.canvas.bind_all("<MouseWheel>", self.canvas_command)
+    
+    def _unbound_to_mousewheel(self, event):
+        self.canvas.unbind_all("<MouseWheel>")
     
     def set_results(self,results):
         self.values = results
