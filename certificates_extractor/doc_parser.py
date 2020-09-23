@@ -6,6 +6,17 @@ import re
 import collections
 import string
 
+class CertificateParer:
+
+    def __init__(self, path):
+        input_base_path = '.\\input\\'
+        output_base_path = '.\\output\\'
+        path = input_base_path + "excel1.xlsx"
+        wb = openpyxl.load_workbook(path) if os.path.isfile(path) else openpyxl.Workbook()
+        sheet = wb.active
+        table_content = []
+        other_content = []
+
 #creare classi di sta roba
 
 def clean(txt):
@@ -193,8 +204,3 @@ v):
 
 wb.save(out)
 
-
-
-
-
- 
