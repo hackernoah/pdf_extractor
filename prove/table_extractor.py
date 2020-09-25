@@ -77,11 +77,13 @@ with open(output_base_path + 'content.txt','w',encoding="utf-8") as f:
 data = []
 indexes = []
 width = 0
-j = 0
+n_rows = 0
+max_rows = 0
 for row in table_content:
     new_width = len(row)
     if new_width != width:
-        j = 0
+        max_rows = n_rows if n_rows > max_rows else max_rows
+        n_rows = 0
         indexes.append({})
         data.append({})
         for i,el in enumerate(row):
@@ -112,9 +114,8 @@ for row in table_content:
                 if i == 0 and el in data[-1][indexes[-1][0]]:
                     break
                 else:
-                    data[-1][indexes[-1][i]].append((j,el))
-            j = j + 1
-print(j)
+                    data[-1][indexes[-1][i]].append((n_rows,el))
+            n_rows = n_rows + 1
 
 with open('tables.json','w',encoding="utf-8") as f:
     json.dump(data, f)
@@ -169,7 +170,7 @@ sheet = wb["Output"]
 progress = sheet.max_row
 
 #da prendere automaticamente
-
+print(max_rows)
 for i,el in enumerate(tracciato):
     connection = True if type(el) is tuple else False
     col = el[0] if connection else el 
@@ -180,12 +181,11 @@ for i,el in enumerate(tracciato):
             sheet.cell(row = k + 2, column = i + 1).value = el
     else:
         if persistent_data[key]:
-            for k in range(j):
+            for k in range(max_rows):
                 sheet.cell(row = k + 2,column = i + 1 ).value = persistent_data[key]
 
 
-# for i,key in enumerate(new_data.keys(
-v):
+# for i,key in enumerate(new_data.keys(v):
 #     sheet.cell(row=1, column=i + 1 ).value = key 
 #     for j,el in new_data[key]:
 #         sheet.cell(row = j + 2, column = i + 1).value = el
