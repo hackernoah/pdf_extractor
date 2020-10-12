@@ -8,17 +8,36 @@ import string
 
 class CertificateParser:
 
-    def __init__(self ):
+    def __init__(self, mapping):
         self.table_content = []
         self.other_content = []
         self.tables = []
         self.max_row = 0
-        #tracciato da prendere da un file esterno e inserire inizializzazione di constants in metodo
-        self.tracciato = ["Issuer",	("Isin Code","ISIN Code"), "CFI Code", ("Underlying","Underlying Shares"),"Type of Certificate", ("Underlying ISIN","ISIN of Share"),	"Strike","Issue date", ("Expiry date","Exercise Settlement Date"), "Parity",	"Nominal Value",	("Quantity","No. of Securities issued"),"Exercise Type",	"Option Type","Exercise Lot",	"Marketing name",	"Price of Underlying",	("Reference Price","Issue Priceper Security"),	"Underlying currency",	"Euro-Hedged",	"1st Barrier",	"Barrier Observation",	"2nd Strike",	"2nd Barrier",	"Autocallability",	"Observation Autocallability",	"Participation %",	"Fee %",	"Long/Short",	"Bonus/Strike%",	"Cap",	"Floor",	"Coupon",	"Protection",	"Specialist Code",	"Quote Type",	"RFE Activation",	"Denomination Currency",	"Trading Currency",	"Settlement Currency",	"Settlement System",	"Leverage Number",	"Restrike %",	"Final Valuation Date",	"Professional",	"KID web link",	"Distribution Type",	"Type of Underlying",	"ACEPI Type",	"Instrument Name",	"Minimum Lot",	"Start Trading Date",	"Last Trading Date",	"Size Obligation",	"Threshold Profile ID",	"First Semaphore",	"First Error Description",	"FISN",	"Multiplier"	"File PDF"]
+        self.tracciato = self.get_mapping(mapping)
+        # self.tracciato = ["Issuer",	("Isin Code","ISIN Code"), "CFI Code", ("Underlying","Underlying Shares"),"Type of Certificate", ("Underlying ISIN","ISIN of Share"),	"Strike","Issue date", ("Expiry date","Exercise Settlement Date"), "Parity",	"Nominal Value",	("Quantity","No. of Securities issued"),"Exercise Type",	"Option Type","Exercise Lot",	"Marketing name",	"Price of Underlying",	("Reference Price","Issue Price per Security"),	"Underlying currency",	"Euro-Hedged",	"1st Barrier",	"Barrier Observation",	"2nd Strike",	"2nd Barrier",	"Autocallability",	"Observation Autocallability",	"Participation %",	"Fee %",	"Long/Short",	"Bonus/Strike%",	"Cap",	"Floor",	"Coupon",	"Protection",	"Specialist Code",	"Quote Type",	"RFE Activation",	"Denomination Currency",	"Trading Currency",	"Settlement Currency",	"Settlement System",	"Leverage Number",	"Restrike %",	"Final Valuation Date",	"Professional",	"KID web link",	"Distribution Type",	"Type of Underlying",	"ACEPI Type",	"Instrument Name",	"Minimum Lot",	"Start Trading Date",	"Last Trading Date",	"Size Obligation",	"Threshold Profile ID",	"First Semaphore",	"First Error Description",	"FISN",	"Multiplier"	"File PDF"]
         self.constants = {}
         for el in self.tracciato:
             if type(el) is not tuple:
                 self.constants[el] = ''
+            else:
+                self.constants[el[1]] = ''
+        # print('TRACCIATO:')
+        # print(self.tracciato)
+        # print('CONSTANTS:')
+        # print(self.constants)
+
+    def get_mapping(self,path):
+        wb = openpyxl.load_workbook(path)
+        sheet = wb.active
+        tracciato = []
+        for i in range(2,sheet.max_row):
+            wanted = sheet.cell(row = i, column=1).value
+            present = sheet.cell(row = i, column=2).value
+            if present:
+                tracciato.append((wanted,present))
+            else:
+                tracciato.append(wanted)
+        return tracciato
     
     def extract_content(self,sheet):
         vertical = sheet.max_row
@@ -103,7 +122,9 @@ class CertificateParser:
             for j in range(i+1,len(list(tables))):
                 for key in table:
                     for  k in self.tables[j]:
-                        if not (set(table[key]) - set(self.tables[j][k])):
+                        compare1 = [str(el).replace('\n','').replace(' ','') for n,el in table[key]]
+                        compare2 = [str(el).replace('\n','').replace(' ','') for n,el in self.tables[j][k]]
+                        if not (set(compare1) - set(compare2)):
                             join_info.append((i,j,key,k))
         return join_info
 
@@ -142,7 +163,6 @@ class CertificateParser:
         wb = openpyxl.load_workbook(path) if os.path.isfile(path) else openpyxl.Workbook()
         sheet = wb.active
         progress = sheet.max_row
-
         for i,el in enumerate(self.tracciato):
             connection = True if type(el) is tuple else False
             col = el[0] if connection else el 
@@ -153,20 +173,21 @@ class CertificateParser:
                     sheet.cell(row = k + 2, column = i + 1).value = el
             else:
                 if self.constants[key]:
-                    for k in range(self.max_row):
-                        sheet.cell(row = k + 2,column = i + 1 ).value = self.constants[key]
+                    if self.max_row:
+                        for k in range(self.max_row):
+                            sheet.cell(row = k + 2,column = i + 1 ).value = self.constants[key]
+                    else:
+                        sheet.cell(row = 2,column = i + 1 ).value = self.constants[key]
         wb.save(path)
 
 
-    def create_import(self,input_path = '.\\input\\excel1.xlsx', output_path='.\\output\\import.xlsx'):
-        self.reset()
+    def create_import(self,input_path, output_path):
         wb = openpyxl.load_workbook(input_path) if os.path.isfile(input_path) else openpyxl.Workbook()
         sheet = wb.active
         self.extract_content(sheet)
         self.get_tabular_data()
         join_info = self.find_join()
         if join_info:
-            print(join_info)
             for info in join_info:
                 self.join_tables(*info)
         self.get_constants()
@@ -176,8 +197,9 @@ class CertificateParser:
         for key in self.constants:
             for row in self.other_content:
                 for el in row:
-                    out = str(el).translate(str.maketrans("","", string.punctuation))
-                    if str(key).lower() == str(out).lower():
+                    out = str(el).translate(str.maketrans("","", string.punctuation + '0123456789')).replace(' ','')
+                    compare = key.replace(' ','')
+                    if str(compare).lower() == str(out).lower():
                         self.constants[key] = row[-1] 
                         break
     
@@ -197,16 +219,17 @@ class CertificateParser:
         result = val.replace(' ','') if re.match(regex, str(val).replace(' ','')) else val
         return result
 
-    def reset(self):
-        self.table_content = []
-        self.other_content = []
-        self.tables = []
-        self.max_row = 0
-        #tracciato da prendere da un file esterno e inserire inizializzazione di constants in metodo
-        self.tracciato = ["Issuer",	("Isin Code","ISIN Code"), "CFI Code", ("Underlying","Underlying Shares"),"Type of Certificate", ("Underlying ISIN","ISIN of Share"),	"Strike","Issue date", ("Expiry date","Exercise Settlement Date"), "Parity",	"Nominal Value",	("Quantity","No. of Securities issued"),"Exercise Type",	"Option Type","Exercise Lot",	"Marketing name",	"Price of Underlying",	("Reference Price","Issue Priceper Security"),	"Underlying currency",	"Euro-Hedged",	"1st Barrier",	"Barrier Observation",	"2nd Strike",	"2nd Barrier",	"Autocallability",	"Observation Autocallability",	"Participation %",	"Fee %",	"Long/Short",	"Bonus/Strike%",	"Cap",	"Floor",	"Coupon",	"Protection",	"Specialist Code",	"Quote Type",	"RFE Activation",	"Denomination Currency",	"Trading Currency",	"Settlement Currency",	"Settlement System",	"Leverage Number",	"Restrike %",	"Final Valuation Date",	"Professional",	"KID web link",	"Distribution Type",	"Type of Underlying",	"ACEPI Type",	"Instrument Name",	"Minimum Lot",	"Start Trading Date",	"Last Trading Date",	"Size Obligation",	"Threshold Profile ID",	"First Semaphore",	"First Error Description",	"FISN",	"Multiplier"	"File PDF"]
-        self.constants = {}
-        for el in self.tracciato:
-            if type(el) is not tuple:
-                self.constants[el] = ''
+
+    # def reset(self):
+    #     self.table_content = []
+    #     self.other_content = []
+    #     self.tables = []
+    #     self.max_row = 0
+    #     #tracciato da prendere da un file esterno e inserire inizializzazione di constants in metodo
+    #     self.tracciato = ["Issuer",	("Isin Code","ISIN Code"), "CFI Code", ("Underlying","Underlying Shares"),"Type of Certificate", ("Underlying ISIN","ISIN of Share"),	"Strike","Issue date", ("Expiry date","Exercise Settlement Date"), "Parity",	"Nominal Value",	("Quantity","No. of Securities issued"),"Exercise Type",	"Option Type","Exercise Lot",	"Marketing name",	"Price of Underlying",	("Reference Price","Issue Priceper Security"),	"Underlying currency",	"Euro-Hedged",	"1st Barrier",	"Barrier Observation",	"2nd Strike",	"2nd Barrier",	"Autocallability",	"Observation Autocallability",	"Participation %",	"Fee %",	"Long/Short",	"Bonus/Strike%",	"Cap",	"Floor",	"Coupon",	"Protection",	"Specialist Code",	"Quote Type",	"RFE Activation",	"Denomination Currency",	"Trading Currency",	"Settlement Currency",	"Settlement System",	"Leverage Number",	"Restrike %",	"Final Valuation Date",	"Professional",	"KID web link",	"Distribution Type",	"Type of Underlying",	"ACEPI Type",	"Instrument Name",	"Minimum Lot",	"Start Trading Date",	"Last Trading Date",	"Size Obligation",	"Threshold Profile ID",	"First Semaphore",	"First Error Description",	"FISN",	"Multiplier"	"File PDF"]
+    #     self.constants = {}
+    #     for el in self.tracciato:
+    #         if type(el) is not tuple:
+    #             self.constants[el] = ''
 
 

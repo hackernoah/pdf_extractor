@@ -1,8 +1,0 @@
-label visibile
-una volta selezionato il numero togliere parentesi e mettere negativo
-allineamento etichette nw
-calcoli excel o applicazione
-data YYYYmmdd
-elabora cartella
-threads
-ricerca nel testo normale

@@ -13,5 +13,13 @@ dist/
 #files
 *.log
 *.spec
+*.xlsx
+*.pdf
+*.txt
 #saved 
 saved_models/ 
+output/
+input/
+scarto/
+provee/
+image/
