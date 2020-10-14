@@ -15,31 +15,30 @@ class CertificateParser:
         self.other_content = []
         self.tables = []
         self.max_row = 0
-        self.tracciato = self.get_mapping(mapping)
-        # self.tracciato = ["Issuer",	("Isin Code","ISIN Code"), "CFI Code", ("Underlying","Underlying Shares"),"Type of Certificate", ("Underlying ISIN","ISIN of Share"),	"Strike","Issue date", ("Expiry date","Exercise Settlement Date"), "Parity",	"Nominal Value",	("Quantity","No. of Securities issued"),"Exercise Type",	"Option Type","Exercise Lot",	"Marketing name",	"Price of Underlying",	("Reference Price","Issue Price per Security"),	"Underlying currency",	"Euro-Hedged",	"1st Barrier",	"Barrier Observation",	"2nd Strike",	"2nd Barrier",	"Autocallability",	"Observation Autocallability",	"Participation %",	"Fee %",	"Long/Short",	"Bonus/Strike%",	"Cap",	"Floor",	"Coupon",	"Protection",	"Specialist Code",	"Quote Type",	"RFE Activation",	"Denomination Currency",	"Trading Currency",	"Settlement Currency",	"Settlement System",	"Leverage Number",	"Restrike %",	"Final Valuation Date",	"Professional",	"KID web link",	"Distribution Type",	"Type of Underlying",	"ACEPI Type",	"Instrument Name",	"Minimum Lot",	"Start Trading Date",	"Last Trading Date",	"Size Obligation",	"Threshold Profile ID",	"First Semaphore",	"First Error Description",	"FISN",	"Multiplier"	"File PDF"]
+        self.tracciato,self.rules = self.get_mapping(mapping)
         self.constants = {}
         for el in self.tracciato:
             if type(el) is not tuple:
                 self.constants[el] = ''
             else:
                 self.constants[el[1]] = ''
-        # print('TRACCIATO:')
-        # print(self.tracciato)
-        # print('CONSTANTS:')
-        # print(self.constants)
 
     def get_mapping(self,path):
         wb = openpyxl.load_workbook(path)
         sheet = wb.active
         tracciato = []
+        rules = {}
         for i in range(2,sheet.max_row):
             wanted = sheet.cell(row = i, column=1).value
             present = sheet.cell(row = i, column=2).value
+            rule = sheet.cell(row = i, column=3).value
             if present:
                 tracciato.append((wanted,present))
             else:
                 tracciato.append(wanted)
-        return tracciato
+            if rule:
+                rules[wanted] = rule
+        return tracciato,rules
     
     def extract_content(self,sheet):
         vertical = sheet.max_row
@@ -233,6 +232,15 @@ class CertificateParser:
                     if str(compare).lower() == str(out).lower():
                         self.constants[key] = row[-1] 
                         break
+        for key in self.rules:
+            constants_key = key
+            for el in self.tracciato:
+                if type(el) is tuple:
+                    if el[0] == key:
+                        constants_key = el[1]
+            match = re.search(self.rules[key], self.constants[constants_key])
+            if match:
+                self.constants[constants_key] = str(match.group(0)).translate(str.maketrans("","", string.punctuation))
     
 
     def clean(self,txt):
