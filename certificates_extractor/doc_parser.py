@@ -5,6 +5,8 @@ import json
 import re
 import collections
 import string
+from datetime import date
+import csv
 
 class CertificateParser:
 
@@ -88,28 +90,28 @@ class CertificateParser:
                     indexes[-1][i] = el 
                 width = new_width
             else:
-                rows = []
-                if tuple in [type(e) for e in row]:
-                    row1 = []
-                    row2 = []
-                    for el in row:
-                        if type(el) is tuple:
-                            row1.append(el[0])
-                            row2.append(el[1])
-                        else:
-                            row1.append(el)
-                            row2.append(el)
-                    rows.append(row1)
-                    rows.append(row2)
-                else:
-                    rows.append(row)
-                for row in rows:
-                    for i,el in enumerate(row):
-                        if i == 0 and el in self.tables[-1][indexes[-1][0]]:
-                            break
-                        else:
-                            self.tables[-1][indexes[-1][i]].append((n_rows,el))
-                    n_rows = n_rows + 1
+                # rows = []
+                # if tuple in [type(e) for e in row]:
+                #     row1 = []
+                #     row2 = []
+                #     for el in row:
+                #         if type(el) is tuple:
+                #             row1.append(el[0])
+                #             row2.append(el[1])
+                #         else:
+                #             row1.append(el)
+                #             row2.append(el)
+                #     rows.append(row1)
+                #     rows.append(row2)
+                # else:
+                #     rows.append(row)
+                # for row in rows:
+                for i,el in enumerate(row):
+                    if i == 0 and el in self.tables[-1][indexes[-1][0]]:
+                        break
+                    else:
+                        self.tables[-1][indexes[-1][i]].append((n_rows,el))
+                n_rows = n_rows + 1
         for t in self.tables:
             for key in list(t.keys()):
                 if not len(t[key]):
@@ -122,24 +124,44 @@ class CertificateParser:
             for j in range(i+1,len(list(tables))):
                 for key in table:
                     for  k in self.tables[j]:
-                        compare1 = [str(el).replace('\n','').replace(' ','') for n,el in table[key]]
-                        compare2 = [str(el).replace('\n','').replace(' ','') for n,el in self.tables[j][k]]
+                        compare1 = self.create_compare(table[key])
+                        compare2 = self.create_compare(self.tables[j][k])
+                        # compare1 = [str(el).replace('\n','').replace(' ','') for n,el in table[key]]
+                        # compare2 = [str(el).replace('\n','').replace(' ','') for n,el in self.tables[j][k]]
                         if not (set(compare1) - set(compare2)):
                             join_info.append((i,j,key,k))
         return join_info
+
+    def create_compare(self, lst):
+        compare = []
+        for n,el in lst:
+            if type(el) is tuple:
+                compare.append(str(el[0]).replace('\n','').replace(' ',''))
+                compare.append(str(el[1]).replace('\n','').replace(' ',''))
+            else:
+                compare.append(str(el).replace('\n','').replace(' ',''))
+        return compare
 
     def join_tables(self, table1, table2, col1, col2):
         new_table = {**self.tables[table1]}
         for key in self.tables[table2]:
             new_table[key] = []
-
         for i,el in self.tables[table1][col1]:
-            for j,e in self.tables[table2][col2]:
-                if e.replace('\n','').replace(' ','') == el.replace('\n','').replace(' ',''):
-                    for key in self.tables[table2]:
-                        for k,elem in self.tables[table2][key]:
-                            if k == j:
-                                new_table[key].append((i,elem))
+            if type(el) is tuple:
+                for j,e in self.tables[table2][col2]:
+                    if e.replace('\n','').replace(' ','') == el[0].replace('\n','').replace(' ',''):
+                        for k,elem in self.tables[table2][col2]:
+                            if elem.replace('\n','').replace(' ','') == el[1].replace('\n','').replace(' ',''):
+                                for key in self.tables[table2]:
+                                    vals = [el for m,el in self.tables[table2][key] if m==j or m==k]
+                                    new_table[key].append((i,tuple(vals)))
+            else:
+                for j,e in self.tables[table2][col2]:
+                    if e.replace('\n','').replace(' ','') == el.replace('\n','').replace(' ',''):
+                        for key in self.tables[table2]:
+                            for k,elem in self.tables[table2][key]:
+                                if k == j:
+                                    new_table[key].append((i,elem))
         self.tables = new_table
 
 
@@ -162,7 +184,9 @@ class CertificateParser:
     def save_to_file(self, path):
         wb = openpyxl.load_workbook(path) if os.path.isfile(path) else openpyxl.Workbook()
         sheet = wb.active
-        progress = sheet.max_row
+        max_row = 0
+        for key in self.tables:
+            max_row = max(max_row,len(self.tables[key]))
         for i,el in enumerate(self.tracciato):
             connection = True if type(el) is tuple else False
             col = el[0] if connection else el 
@@ -170,15 +194,22 @@ class CertificateParser:
             sheet.cell(row=1, column=i + 1 ).value = col 
             if key in self.tables:
                 for k,el in self.tables[key]:
-                    sheet.cell(row = k + 2, column = i + 1).value = el
+                    val = str(el[0]) + '\\' + str(el[1]) if type(el) is tuple else el
+                    sheet.cell(row = k + 2, column = i + 1).value = val
             else:
                 if self.constants[key]:
-                    if self.max_row:
-                        for k in range(self.max_row):
+                    if max_row:
+                        for k in range(max_row):
                             sheet.cell(row = k + 2,column = i + 1 ).value = self.constants[key]
                     else:
                         sheet.cell(row = 2,column = i + 1 ).value = self.constants[key]
-        wb.save(path)
+        time = date.today().strftime("%d/%m/%Y %H:%M:%S").replace("/",".").replace(":",".")
+        issuer = self.constants[self.tracciato[0][1]]
+        name = f'FinalTerm_{issuer}_{time}.csv'
+        with open(f'{path + name}', 'w+', newline='') as f:
+            c = csv.writer(f,delimiter=';')
+            for r in sheet.rows:
+                c.writerow([cell.value for cell in r])
 
 
     def create_import(self,input_path, output_path):
