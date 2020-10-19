@@ -5,8 +5,9 @@ import json
 import re
 import collections
 import string
-from datetime import date
+from datetime import date, datetime
 import csv
+from dateutil.parser import parse
 
 class CertificateParser:
 
@@ -32,6 +33,7 @@ class CertificateParser:
             wanted = sheet.cell(row = i, column=1).value
             present = sheet.cell(row = i, column=2).value
             rule = sheet.cell(row = i, column=3).value
+            time_format = sheet.cell(row = i, column=4).value
             if present:
                 tracciato.append((wanted,present))
             else:
@@ -163,6 +165,33 @@ class CertificateParser:
                                     new_table[key].append((i,elem))
         self.tables = new_table
 
+    def correct_date_formats(self):
+        for key in self.constants:
+            if 'date' in key.lower():
+                new_date =  self.parse_date(self.constants[key])
+                if new_date:
+                    self.constants[key] = new_date 
+        for key in self.tables:
+            if 'date' in key.lower():
+                new_col = []
+                for i,el in self.tables[key]:
+                    new_date = self.parse_date(el)
+                    if new_date:
+                        new_col.append((i,el))
+                if len(new_col) == len(self.tables[key]):
+                    self.tables[key] = new_col
+                        
+
+    def parse_date(self, string, fuzzy = True):
+        try:
+            date = str(string).replace('\n','')
+            obj = parse(str(string), fuzzy=fuzzy)
+            return obj.strftime(r'%d/%m/%y')
+        except ValueError:
+            return None
+
+
+
 
                     
     # da individuare automaticamente le colonne e le tabelle da unire
@@ -221,7 +250,9 @@ class CertificateParser:
             for info in join_info:
                 self.join_tables(*info)
         self.get_constants()
+        self.correct_date_formats()
         self.save_to_file(output_path)
+    
 
     def get_constants(self):
         for key in self.constants:
