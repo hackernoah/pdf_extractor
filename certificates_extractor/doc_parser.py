@@ -177,7 +177,7 @@ class CertificateParser:
                 for i,el in self.tables[key]:
                     new_date = self.parse_date(el)
                     if new_date:
-                        new_col.append((i,el))
+                        new_col.append((i,new_date))
                 if len(new_col) == len(self.tables[key]):
                     self.tables[key] = new_col
                         
@@ -185,7 +185,7 @@ class CertificateParser:
     def parse_date(self, string, fuzzy = True):
         try:
             date = str(string).replace('\n','')
-            obj = parse(str(string), fuzzy=fuzzy)
+            obj = parse(date, fuzzy=fuzzy)
             return obj.strftime(r'%d/%m/%y')
         except ValueError:
             return None
@@ -286,7 +286,7 @@ class CertificateParser:
         return ' '.join(result)
 
     def check_regex(self,val, regex):
-        result = val.replace(' ','') if re.match(regex, str(val).replace(' ','')) else val
+        result = val.replace(' ','').replace('\n','') if re.match(regex, str(val).replace(' ','').replace('\n','')) else val
         return result
 
 
