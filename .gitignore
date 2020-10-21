@@ -16,6 +16,7 @@ dist/
 *.xlsx
 *.pdf
 *.txt
+log
 #saved 
 saved_models/ 
 output/

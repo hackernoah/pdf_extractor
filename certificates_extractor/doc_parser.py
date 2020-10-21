@@ -5,6 +5,7 @@ import json
 import re
 import collections
 import string
+import logging
 from datetime import date, datetime
 import csv
 from dateutil.parser import parse
@@ -18,6 +19,13 @@ class CertificateParser:
         self.max_row = 0
         self.tracciato,self.rules = self.get_mapping(mapping)
         self.constants = {}
+        print(os.getcwd() + '\\log')
+        logging.basicConfig(filename=os.getcwd() + '\\log',
+                            filemode='a',
+                            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                            datefmt='%H:%M:%S',
+                            level=logging.DEBUG)
+        self.logger = logging.getLogger()
         for el in self.tracciato:
             if type(el) is not tuple:
                 self.constants[el] = ''
@@ -221,16 +229,19 @@ class CertificateParser:
             key = el[1] if connection else el
             sheet.cell(row=1, column=i + 1 ).value = col 
             if key in self.tables:
+                self.logger.info(f'Campo trovato col nome {key}')
                 for k,el in self.tables[key]:
                     val = str(el[0]) + '\\' + str(el[1]) if type(el) is tuple else el
                     sheet.cell(row = k + 2, column = i + 1).value = val
+            elif self.constants[key]:
+                self.logger.info(f'Campo trovato col nome {key}')
+                if max_row:
+                    for k in range(max_row):
+                        sheet.cell(row = k + 2,column = i + 1 ).value = self.constants[key]
+                else:
+                    sheet.cell(row = 2,column = i + 1 ).value = self.constants[key]
             else:
-                if self.constants[key]:
-                    if max_row:
-                        for k in range(max_row):
-                            sheet.cell(row = k + 2,column = i + 1 ).value = self.constants[key]
-                    else:
-                        sheet.cell(row = 2,column = i + 1 ).value = self.constants[key]
+                self.logger.warning(f'Campo {key} non trovato')
         time = date.today().strftime("%d/%m/%Y %H:%M:%S").replace("/",".").replace(":",".")
         issuer = self.constants[self.tracciato[0][1]]
         name = f'FinalTerm_{issuer}_{time}.csv'
@@ -241,6 +252,7 @@ class CertificateParser:
 
 
     def create_import(self,input_path, output_path):
+        self.logger.info(f"EXTRACTING DATA FROM {input_path}")
         wb = openpyxl.load_workbook(input_path) if os.path.isfile(input_path) else openpyxl.Workbook()
         sheet = wb.active
         self.extract_content(sheet)
