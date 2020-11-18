@@ -12,25 +12,25 @@ from dateutil.parser import parse
 
 class CertificateParser:
 
-    def __init__(self, mapping):
+    def __init__(self, mapping, log_name):
         self.table_content = []
         self.other_content = []
         self.tables = []
         self.max_row = 0
         self.tracciato,self.rules = self.get_mapping(mapping)
         self.constants = {}
-        print(os.getcwd() + '\\log')
-        logging.basicConfig(filename=os.getcwd() + '\\log',
+        log_name = log_name if log_name else 'cerex.log'
+        logging.basicConfig(filename=os.getcwd() + f'\\{log_name}',
                             filemode='a',
                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                             datefmt='%H:%M:%S',
                             level=logging.DEBUG)
         self.logger = logging.getLogger()
         for el in self.tracciato:
-            if type(el) is not tuple:
-                self.constants[el] = ''
-            else:
-                self.constants[el[1]] = ''
+                if type(el) is not tuple:
+                    self.constants[el] = ''
+                else:
+                    self.constants[el[1]] = ''
 
     def get_mapping(self,path):
         wb = openpyxl.load_workbook(path)
