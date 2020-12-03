@@ -2,15 +2,17 @@ from certificates_extractor.doc_parser import CertificateParser
 import sys
 import os 
 
-
+#prendo i parametri passati da linea di comando
 input_arg = sys.argv[1] 
 output_arg = sys.argv[2] if len(sys.argv) > 2 else None
 log_name = sys.argv[3] if len(sys.argv) > 2 else None
 
+#leggo le sottocartelle della cartella passata come input
 sub_folders = dict([(f.path,[]) for f in os.scandir(input_arg) if f.is_dir()])
 for key in sub_folders:
     sub_folders[key].extend(os.listdir(key))
 
+#creo la cartella di output speculare a quella di input
 if output_arg:
     for key in sub_folders:
         dir_name = output_arg + f'\\{os.path.basename(os.path.normpath(key))}'
@@ -19,6 +21,7 @@ if output_arg:
 
 print(sub_folders)
 
+#eseguo l'estrazione sui file nella cartella di input
 for key in sub_folders:
     file_list = []
     mapping = None

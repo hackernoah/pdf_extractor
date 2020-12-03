@@ -250,7 +250,7 @@ class CertificateParser:
             for r in sheet.rows:
                 c.writerow([cell.value for cell in r])
 
-
+    #funzione principale
     def create_import(self,input_path, output_path):
         self.logger.info(f"EXTRACTING DATA FROM {input_path}")
         wb = openpyxl.load_workbook(input_path) if os.path.isfile(input_path) else openpyxl.Workbook()

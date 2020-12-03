@@ -16,6 +16,7 @@ dist/
 *.xlsx
 *.pdf
 *.txt
+!requirements.txt
 log
 #saved 
 saved_models/ 
